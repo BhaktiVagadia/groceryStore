@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.core.files import File
 from django.core.files.base import ContentFile
+from django.core.files.storage import FileSystemStorage
 from django.utils.text import slugify
 
 from import_export import resources, fields
@@ -31,6 +32,38 @@ QUANTITY_ATTRIBUTE_CODE = 'quantity'
 # Keep this modest - it's bounded by the remote hosts' tolerance, not just ours.
 IMAGE_FETCH_WORKERS = 8
 IMAGE_FETCH_TIMEOUT = 8  # seconds per request; fail fast, don't hold a thread open for 10s x 8000
+
+# Subfolder (under each static root) where per-product image folders live,
+# e.g. static/product_images/<folder_path_string>/cover.jpg
+STATIC_IMAGES_SUBDIR = 'product_images'
+
+
+def _static_images_write_root():
+    """Directory that newly downloaded/copied images get written into.
+
+    Without this, ProductImage.image.save() uses the field's default
+    storage, which points at MEDIA_ROOT (or the project root if
+    MEDIA_ROOT isn't set) - never static/. This picks one deterministic
+    target: the first STATICFILES_DIRS entry if set (what you see in dev,
+    before collectstatic), otherwise BASE_DIR/static.
+    """
+    staticfiles_dirs = getattr(settings, 'STATICFILES_DIRS', None) or []
+    if staticfiles_dirs:
+        base = staticfiles_dirs[0]
+    else:
+        base_dir = getattr(settings, 'BASE_DIR', None)
+        base = os.path.join(str(base_dir), 'static') if base_dir else 'static'
+    return os.path.join(str(base), STATIC_IMAGES_SUBDIR)
+
+
+def _get_static_image_storage():
+    """A FileSystemStorage rooted at static/product_images, with a matching
+    base_url so ProductImage.image.url resolves under STATIC_URL. Assign
+    this to a FieldFile's .storage attribute *before* calling .save() to
+    redirect that one save away from the field's default (media) storage."""
+    static_url = getattr(settings, 'STATIC_URL', '/static/')
+    base_url = f"{static_url.rstrip('/')}/{STATIC_IMAGES_SUBDIR}/"
+    return FileSystemStorage(location=_static_images_write_root(), base_url=base_url)
 
 
 def _generate_unique_sku(name, existing_skus, max_length=64):
@@ -362,12 +395,50 @@ class ProductResource(resources.ModelResource):
             },
         )
 
+    def _resolve_static_image_folder(self, folder_path_string):
+        """Resolve `folder_path_string` (e.g. 'shoe-123' or 'shoe-123/red')
+        to an actual directory on disk under static/product_images.
+
+        Tries, in order:
+        1. The string as-is (absolute path or already a valid relative path
+           from the process's cwd) - keeps old behavior working unchanged.
+        2. Each entry in settings.STATICFILES_DIRS joined with
+           STATIC_IMAGES_SUBDIR/folder_path_string.
+        3. settings.STATIC_ROOT joined the same way (e.g. after collectstatic).
+        4. settings.BASE_DIR/static joined the same way (common project layout
+           even when STATICFILES_DIRS isn't explicitly set).
+        Returns None if nothing matches.
+        """
+        if os.path.exists(folder_path_string) and os.path.isdir(folder_path_string):
+            return folder_path_string
+
+        candidate_roots = []
+        candidate_roots.extend(getattr(settings, 'STATICFILES_DIRS', None) or [])
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidate_roots.append(settings.STATIC_ROOT)
+        base_dir = getattr(settings, 'BASE_DIR', None)
+        if base_dir:
+            candidate_roots.append(os.path.join(str(base_dir), 'static'))
+
+        for root in candidate_roots:
+            candidate = os.path.join(str(root), STATIC_IMAGES_SUBDIR, folder_path_string)
+            candidate = candidate.replace('\\', '/')
+            if os.path.exists(candidate) and os.path.isdir(candidate):
+                return candidate
+
+        return None
+
     def _attach_images_from_folder(self, product, folder_path_string):
         clean_folder_path = folder_path_string.strip().replace('\\', '/')
 
-        if not (os.path.exists(clean_folder_path) and os.path.isdir(clean_folder_path)):
-            logger.warning("Folder path not found or invalid: %s", clean_folder_path)
+        resolved_path = self._resolve_static_image_folder(clean_folder_path)
+        if resolved_path is None:
+            logger.warning(
+                "Folder path not found under static/%s or as given: %s",
+                STATIC_IMAGES_SUBDIR, clean_folder_path
+            )
             return
+        clean_folder_path = resolved_path
 
         ProductImage.objects.filter(product_id=product).delete()
 
@@ -379,16 +450,15 @@ class ProductResource(resources.ModelResource):
 
                 try:
                     with open(clean_path, 'rb') as local_file:
-                        product_image = File(local_file, name=file_name)
-
-                        ProductImage.objects.get_or_create(
+                        product_image = ProductImage(
                             product_id=product,
-                            image=product_image,
-                            defaults={
-                                'is_base': is_cover_image,
-                                'status': True
-                            }
+                            is_base=is_cover_image,
+                            status=True,
                         )
+                        # Redirect this save to static/product_images instead
+                        # of the field's default (media) storage.
+                        product_image.image.storage = _get_static_image_storage()
+                        product_image.image.save(file_name, File(local_file), save=True)
                 except Exception as e:
                     logger.warning("Failed to open/save local image %s: %s", clean_path, e)
 
@@ -440,6 +510,9 @@ class ProductResource(resources.ModelResource):
             return
 
         product_image = ProductImage(product_id=product, is_base=True, status=True)
+        # Redirect this save to static/product_images instead of the
+        # field's default (media) storage.
+        product_image.image.storage = _get_static_image_storage()
         product_image.image.save(file_name, ContentFile(response.content), save=True)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):

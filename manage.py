@@ -6,6 +6,7 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # Replace 'myproject' with the exact folder name containing your settings.py file
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecommerce.settings')
     try:
         from django.core.management import execute_from_command_line
