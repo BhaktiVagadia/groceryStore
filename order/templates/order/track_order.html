@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5" style="max-width: 700px;">
+
+    <h2 class="mb-4 text-center">Track Your Order</h2>
+
+    <div class="card p-4 shadow-sm mb-5">
+        <form method="POST" novalidate>
+            {% csrf_token %}
+            <div class="form-item">
+                <label class="form-label">Order / Invoice Number</label>
+                {{ form.order_number }}
+                {% if form.order_number.errors %}<div class="text-danger small">{{ form.order_number.errors.as_text }}</div>{% endif %}
+            </div>
+            <div class="form-item">
+                <label class="form-label">Email Address used at Checkout</label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.as_text }}</div>{% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Find Order</button>
+        </form>
+
+        {% if error_message %}
+            <div class="alert alert-danger mt-3 text-center">{{ error_message }}</div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

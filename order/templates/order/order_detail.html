@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+
+    <h2 class="mb-4 text-center">Track Your Order</h2>
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% if order %}
+    <div class="card p-4 shadow-sm border-primary">
+        <div class="d-flex justify-content-between border-bottom pb-3 mb-4">
+            <div>
+                <h5>Order: <span class="text-primary">{{ order.order_number }}</span></h5>
+                <small class="text-muted">Total Paid: Rs.{{ order.order_total }}</small><br>
+                {% if order.orderpayment_set.first.razorpay_payment_id%}
+                    <small class="text-muted">Transaction_id: {{ order.orderpayment_set.first.razorpay_payment_id }}</small>
+                {% endif %}
+            </div>
+            <div class="text-end">
+                <!-- Check what status string or integer your model uses -->
+                <span class="badge bg-warning text-dark px-3 py-2 fs-6">
+                    {% if order.status == 1 %}Order Placed
+                    {% elif order.status == 2 %}Payment Confirmed
+                    {% elif order.status == 3 %}Order Confirmed
+                    {% elif order.status == 4 %}Shipped
+                    {% elif order.status == 5 %}Delivered
+                    {% elif order.status == 6 %}Cancelled
+                    {% endif %}
+                </span>
+                {% if order.status < 4 %}
+                    <button type="button" class="badge bg-danger text-dark px-3 py-2 fs-6" onclick="openUserCancelModal()">
+                        Cancel Order
+                    </button>
+                {% endif %}
+                {% if order.status == 6 %}
+                    <div>
+                        <small class="text-muted">Cancellation Reason:{{ order.cancellation_reason }}</small><br>
+                        {% if order.orderpayment_set.first.refund_id %}
+                            <small class="text-muted">Refund Payment Id:{{ order.orderpayment_set.first.refund_id }}</small><br>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Progress Tracker Timeline UI -->
+        {% if order.status != 6 %}
+            <div class="row text-center position-relative">
+                <div class="{% if order.payment_type == 1 %}col-2{% else %}col-3{% endif %}">
+                    <div class="rounded-circle bg-success text-white mx-auto d-flex align-items-center justify-content-center" style="width:40px; height:40px;">✓</div>
+                    <p class="mt-2 mb-0 font-weight-bold small">Order Placed</p>
+                </div>
+                {% if order.payment_type == 1 %}
+                    <div class="col-3">
+                        <div class="rounded-circle {% if order.status >= 2 %}bg-success text-white{% else %}bg-secondary text-light{% endif %} mx-auto d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                            {% if order.status >= 2  %}✓{% else %}2{% endif %}
+                        </div>
+                        <p class="mt-2 mb-0 small text-muted">Payment Confirmed</p>
+                    </div>
+                {% endif %}
+                <div class="{% if order.payment_type == 1 %}col-2{% else %}col-3{% endif %}">
+                    <div class="rounded-circle {% if order.status >= 3 %}bg-success text-white{% else %}bg-secondary text-light{% endif %} mx-auto d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        {% if order.status >= 3 %}✓{% elif order.payment_type == 0 %}2{% else %}3{% endif %}
+                    </div>
+                    <p class="mt-2 mb-0 small text-muted">Order Confirmed</p>
+                </div>
+                <div class="{% if order.payment_type == 1 %}col-2{% else %}col-3{% endif %}">
+                    <div class="rounded-circle {% if order.status >= 4 %}bg-success text-white{% else %}bg-secondary text-light{% endif %} mx-auto d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        {% if order.status >= 4 %}✓{% elif order.payment_type == 0 %}3{% else %}4{% endif %}
+                    </div>
+                    <p class="mt-2 mb-0 small text-muted">Shipped</p>
+                </div>
+                <div class="{% if order.payment_type == 1 %}col-2{% else %}col-3{% endif %}">
+                    <div class="rounded-circle {% if order.status >= 5 %}bg-success text-white{% else %}bg-secondary text-light{% endif %} mx-auto d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        {% if order.status >= 5 %}✓{% elif order.payment_type == 0 %}4{% else %}5{% endif %}
+                    </div>
+                    <p class="mt-2 mb-0 small text-muted">Delivered</p>
+                </div>
+            </div>
+        {% else %}
+            <h4>Order Cancelled</h4>
+        {% endif %}
+
+        <h6 class="mt-4">Items Ordered:</h6>
+        <ul class="list-group list-group-flush">
+             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Product <span>Quantity</span>
+                <span>Total</span>
+            </li>
+            {% for item in order.orderitem_set.all %}
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    <span>
+                        {{ item.product_name }}
+                        {% if item.variant_id %}
+                            <br><small class="text-muted">Variant: {{ item.variant_id.attribute_name }}</small>
+                        {% endif %}
+                    </span>
+                    <span class="text-muted">{{ item.qty }}</span>
+                    <span>Rs.{{ item.total_price }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+
+
+         <div class="row justify-content-end mt-4 pt-3 border-top">
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="p-3 bg-light rounded border">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal:</span>
+                        <span class="text-dark">Rs.{{ order.row_total|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Shipping Charge:</span>
+                        <span class="text-dark">Rs.{{ order.shipping_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tax Amount:</span>
+                        <span class="text-dark">Rs.{{ order.tax_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Discount {% if order.coupon_code %}({{ order.coupon_code }}){% endif %}:</span>
+                        <strong>- Rs.{{ order.discount_amount|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2 mt-2 border-top border-secondary">
+                        <span class="h5 mb-0 font-weight-bold">Cart Total:</span>
+                        <strong class="h5 mb-0 text-primary">Rs.{{ order.order_total|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+    <div id="userCancelModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div style="background-color: #fff; margin: 15% auto; padding: 25px; border-radius: 8px; width: 90%; max-width: 450px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: sans-serif;">
+        <h3 style="margin-top: 0; color: #333; margin-bottom: 15px;">Cancel Order {{ order.order_number }}</h3>
+
+        <!-- Form pointing to your frontend view -->
+        <form method="POST" action="{% url 'cancel_order' order.id %}">
+            {% csrf_token %}
+            <div style="margin-bottom: 20px;">
+                <label for="frontend_reason" style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">
+                    Please let us know why you are cancelling your order:
+                </label>
+                <textarea name="cancellation_reason" id="frontend_reason" required
+                          placeholder="Type your cancellation reason here..."
+                          style="width: 100%; height: 100px; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-size: 14px;"></textarea>
+            </div>
+
+            <div style="text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeUserCancelModal()"
+                        style="background: #e0e0e0; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; font-weight: bold; color: #333;">
+                    Go Back
+                </button>
+                <button type="submit"
+                        style="background: #dc3545; color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; font-weight: bold;">
+                    Confirm Cancellation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+    <script>
+        function openUserCancelModal() {
+            document.getElementById('userCancelModal').style.display = 'block';
+        }
+
+        function closeUserCancelModal() {
+            document.getElementById('userCancelModal').style.display = 'none';
+            document.getElementById('frontend_reason').value = '';
+        }
+
+        // Close if user clicks dark area outside modal
+        window.onclick = function(event) {
+            var modal = document.getElementById('userCancelModal');
+            if (event.target == modal) {
+                closeUserCancelModal();
+            }
+        }
+    </script>
+{% endblock %}

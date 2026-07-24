@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <!-- Shop Page Start -->
+    <div class="container-fluid shop py-5">
+        <div class="container py-5">
+            <div class="row g-4">
+                <div class="col-lg-3 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="product-categories mb-4">
+                        <h4>Products Categories</h4>
+                        <ul class="list-unstyled category-scroll">
+                             <li>
+                                <div class="categories-item">
+                                    <a href="{% url 'products' %}" class="text-dark {% if request.GET.category_sku == category.sku %}active-category{% endif %}"><i class="fas fa-apple-alt text-secondary me-2"></i>
+                                        All Category</a>
+                                    <span class="{% if not request.GET.category_sku %}active-category-span{% endif %}">{{ all_products_count }}</span>
+                                </div>
+                            </li>
+                            {% for category in categories %}
+                            <li>
+                                <div class="categories-item">
+                                    <a href="{% url 'products' %}?category_sku={{ category.sku }}" class="text-dark {% if request.GET.category_sku == category.sku %}active-category{% endif %}"><i class="fas fa-apple-alt text-secondary me-2"></i>
+                                        {{ category.name }}</a>
+                                    <span class="{% if request.GET.category_sku == category.sku %}active-category-span{% endif %}">{{ category.total_products }}</span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="price mb-4">
+                        <h4 class="mb-2">Price</h4>
+                        <input type="range" class="form-range w-100" id="rangeInput" name="rangeInput" min="0" max="500"
+                            value="{{ request.GET.max_price|default:'0'  }}" oninput="amount.value=rangeInput.value">
+                        <output id="amount" name="amount" min-velue="0" max-value="500" for="rangeInput">{{ request.GET.max_price|default:"0"}}</output>
+                        <input type="hidden" id="activeSku" value="{{ request.GET.category_sku|default:'' }}">
+                        <input type="hidden" id="activeSort" value="{{ request.GET.sort|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-lg-9 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="container-fluid px-0">
+                        <div class="row g-4 mb-3 mx-0">
+                            <div class="col-xl-8">
+                                <div class="input-group w-100 mx-auto d-flex">
+                                    <input type="search" id="keywordSearch" class="form-control p-3" placeholder="keywords" aria-describedby="search-icon-1"   value="{{ request.GET.keywords|default:'' }}">
+                                    <span id="search-icon-1" class="input-group-text p-3"><i class="fa fa-search"></i></span>
+                                </div>
+                            </div>
+                            <div class="col-xl-4 text-end ">
+                                <div class="bg-light ps-3 py-3 rounded d-flex justify-content-between">
+                                    <label for="sort_dropdown">Sort By:</label>
+                                    <select id="sort_dropdown" name="sort_dropdown_list"
+                                        class="border-0 form-select-sm bg-light me-3" form="electronicsform">
+                                        <option value="default" {% if not request.GET.sort %}selected{% endif %}>Default Sorting</option>
+                                        <option value="newest" {% if request.GET.sort == "newest" %}selected{% endif %}>Newness</option>
+                                        <option value="price_asc" {% if request.GET.sort == "price_asc" %}selected{% endif %}>Price Low to high</option>
+                                        <option value="price_desc" {% if request.GET.sort == "price_desc" %}selected{% endif %}>Price High to low</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-content">
+                            <div id="tab-5" class="tab-pane fade show p-0 active">
+                                <div class="row g-4 product">
+                                    {% for product in products %}
+                                        <div class="col-lg-4 d-flex">
+                                            <div class="product-item rounded wow fadeInUp d-flex flex-column w-100" data-wow-delay="0.1s">
+                                                <div class="product-item-inner border rounded d-flex flex-column flex-grow-1 product-clickable" data-href="{% url 'product_detail' sku=product.sku %}">
+                                                    <div class="product-item-inner-item">
+                                                        <img src="{{ product.get_display_image_url }}" class="img-fluid w-100 rounded-top" alt="">
+                                                    </div>
+                                                    <div class="text-center rounded-bottom p-4 d-flex flex-column flex-grow-1">
+                                                        <a href="{% url 'product_detail' sku=product.sku %}" class="d-block h5 mb-1 text-dark">{{ product.name }}</a>
+                                                        <span class="text-primary fs-5 product-price mt-auto" data-base-price="{{ product.price }}">Rs. {{ product.price }}</span>
+
+                                                        {% if product.active_variants %}
+                                                            <select class="form-select form-select-sm variant-select mt-2" data-base-price="{{ product.price }}">
+                                                                <option value="" data-price="{{ product.price }}">Select variant</option>
+                                                                {% for variant in product.active_variants %}
+                                                                    <option value="{{ variant.id }}" data-price="{{ variant.price }}">{{ variant.attribute_name }} - Rs. {{ variant.price }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% if product.is_available %}
+                                                    <div class="product-item-add border border-top-0 rounded-bottom  text-center p-4 pt-0">
+
+                                                        <form action="{% url 'addToCart' product.id %}" method="POST" style="display: inline;">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" class="variant-id-input" name="variant_id" value="">
+                                                            <button type="submit" class="btn btn-primary border-secondary rounded-pill py-2 px-4 mb-4">
+                                                                <i class="fa fa-shopping-cart"></i> add to cart
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                {% else %}
+                                                   <div class="product-item-add border border-top-0 rounded-bottom  text-center p-4 pt-0">
+
+                                                        <form action="{% url 'notify_me' product.id %}" method="POST" style="display: inline;">
+                                                            {% csrf_token %}
+                                                            <input type="email" name="email" class="form-control mb-2" placeholder="Enter Email" required>
+                                                            <button type="submit" class="btn btn-primary border-secondary rounded-pill py-2 px-4 mb-4">
+                                                                <i class="fa fa-bell"></i> Notify Me
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="col-12 wow fadeInUp" data-wow-delay="0.1s">
+                                    <div class="pagination d-flex justify-content-center mt-5">
+                                        {% if products.has_previous %}
+                                            <a href="?page={{ products.previous_page_number }}">Previous</a>
+                                        {% endif %}
+
+                                        {% for page_num in products.paginator.page_range %}
+                                            {% if products.number == page_num %}
+                                                <a href="?page={{ page_num }}" class="active rounded">{{ page_num }}</a>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if products.has_next %}
+                                            <a href="?page={{ products.next_page_number }}">Next</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Shop Page End -->
+    <script>
+        const priceSlider = document.getElementById('rangeInput');
+        const priceValue = document.getElementById('amount');
+        const sortDropdown = document.getElementById('sort_dropdown');
+        const searchButton = document.getElementById('search-icon-1');
+        const keywordSearch = document.getElementById('keywordSearch');
+
+        // Live update the price slider text as you drag
+        priceSlider.addEventListener('input', function() {
+            priceValue.textContent = this.value;
+        });
+
+        // Central function to update all URL query parameters together
+        function updateFilters() {
+            let queryParams = new URLSearchParams();
+
+            // Grab values from inputs and hidden elements
+            const sku = document.getElementById('activeSku').value;
+            const price = priceSlider.value;
+            const sortBy = sortDropdown.value;
+            const searchVal = keywordSearch.value.trim();
+
+            if (searchVal) queryParams.set('keywords', searchVal);
+            if (sku) queryParams.set('category_sku', sku);
+            if (price != "0") queryParams.set('max_price', price);
+            if (sortBy) queryParams.set('sort', sortBy);
+
+
+            // Refresh the page with combined properties
+            window.location.search = queryParams.toString();
+        }
+
+        // Trigger update on mouse release from the price slider
+        priceSlider.addEventListener('change', updateFilters);
+
+        // Trigger update immediately when changing the dropdown option
+        sortDropdown.addEventListener('change', updateFilters);
+
+        searchButton.addEventListener('click', updateFilters);
+
+        keywordSearch.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updateFilters();
+            }
+        });
+
+        keywordSearch.addEventListener('search', function(e) {
+            // If the input value becomes empty, it means the user clicked the 'X'
+            if (this.value === '') {
+                updateFilters(); // Call your centralized function to reload the page without the keyword filter
+            }
+        });
+
+        // Update price + hidden add-to-cart field when a variant is picked
+        document.querySelectorAll('.variant-select').forEach(function (select) {
+            select.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                const price = selectedOption.getAttribute('data-price');
+                const productItem = this.closest('.product-item');
+
+                const priceEl = productItem.querySelector('.product-price');
+                priceEl.textContent = 'Rs. ' + parseFloat(price).toFixed(2);
+
+                const variantInput = productItem.querySelector('.variant-id-input');
+                if (variantInput) {
+                    variantInput.value = this.value; // empty string = base product, no variant
+                }
+            });
+        });
+
+        // Make the whole card clickable -> go to product detail page,
+        // but ignore clicks on interactive controls (variant select, links, buttons, inputs)
+        // so add-to-cart / notify-me / variant selection keep working normally.
+        document.querySelectorAll('.product-clickable').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('select, a, button, input, label, option')) {
+                    return;
+                }
+                const href = this.dataset.href;
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+        });
+    </script>
+
+{% endblock %}

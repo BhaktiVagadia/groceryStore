@@ -1,0 +1,95 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block result_list %}
+    <!-- 1. Today's Orders Grid (Only show if "All" or "Today's Orders" is selected) -->
+    {% if not request.GET.date_range or request.GET.date_range == 'today' %}
+    <div class="module" style="margin-bottom: 35px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden;">
+        <h2 style="background: #417690; color: white; padding: 10px; margin: 0; font-size: 14px;">
+            Today's Orders ({{ todays_orders|length }})
+        </h2>
+        <div class="results" style="overflow-x: auto;">
+            <table id="result_list" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th><div class="text"><span>ORDER NUMBER</span></div></th>
+                        <th><div class="text"><span>STATUS</span></div></th>
+                        <th><div class="text"><span>ROW TOTAL</span></div></th>
+                        <th><div class="text"><span>SHIPPING AMOUNT</span></div></th>
+                        <th><div class="text"><span>ORDER TOTAL</span></div></th>
+                        <th><div class="text"><span>PAYMENT TYPE</span></div></th>
+                        <th><div class="text"><span>SHIPPING METHOD</span></div></th>
+                        <th><div class="text"><span>TRACKING NUMBER</span></div></th>
+                        <th><div class="text"><span>TRACKING LINK</span></div></th>
+                        <th><div class="text"><span>CREATED AT</span></div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in todays_orders %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <th><a href="{% url 'admin:order_order_change' order.pk %}">{{ order.order_number }}</a></th>
+                        <td>{{ order.get_status_display|default:order.status }}</td>
+                        <td>{{ order.row_total }}</td>
+                        <td>{{ order.shipping_amount }}</td>
+                        <td>{{ order.order_total }}</td>
+                        <td>{{ order.get_payment_type_display|default:order.payment_type }}</td>
+                        <td>{{ order.shipping_method }}</td>
+                        <td>{{ order.tracking_number }}</td>
+                        <td>{{ order.tracking_link }}</td>
+                        <td>{{ order.created_at|date:"F d, Y, g:i a" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr class="row1"><td colspan="7" style="padding: 15px; text-align: center; color: #666;">No orders found for today matching the filters.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 2. Older Orders Grid (Only show if "All" or "Older Orders" is selected) -->
+    {% if not request.GET.date_range or request.GET.date_range == 'older' %}
+    <div class="module" style="border: 1px solid #ccc; border-radius: 4px; overflow: hidden;">
+        <h2 style="background: #205067; color: white; padding: 10px; margin: 0; font-size: 14px;">
+            Older Orders ({{ older_orders|length }})
+        </h2>
+        <div class="results" style="overflow-x: auto;">
+            <table id="result_list" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th><div class="text"><span>ORDER NUMBER</span></div></th>
+                        <th><div class="text"><span>STATUS</span></div></th>
+                        <th><div class="text"><span>ROW TOTAL</span></div></th>
+                        <th><div class="text"><span>SHIPPING AMOUNT</span></div></th>
+                        <th><div class="text"><span>ORDER TOTAL</span></div></th>
+                        <th><div class="text"><span>PAYMENT TYPE</span></div></th>
+                        <th><div class="text"><span>SHIPPING METHOD</span></div></th>
+                        <th><div class="text"><span>TRACKING NUMBER</span></div></th>
+                        <th><div class="text"><span>TRACKING LINK</span></div></th>
+                        <th><div class="text"><span>CREATED AT</span></div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in older_orders %}
+                    <tr class="{% cycle 'row1' 'row2' as rowcolors %}">
+                        <th><a href="{% url 'admin:order_order_change' order.pk %}">{{ order.order_number }}</a></th>
+                        <td>{{ order.get_status_display|default:order.status }}</td>
+                        <td>{{ order.row_total }}</td>
+                        <td>{{ order.shipping_amount }}</td>
+                        <td>{{ order.order_total }}</td>
+                        <td>{{ order.get_payment_type_display|default:order.payment_type }}</td>
+                        <td>{{ order.shipping_method }}</td>
+                        <td>{{ order.tracking_number }}</td>
+                        <td>{{ order.tracking_link }}</td>
+
+                        <td>{{ order.created_at|date:"F d, Y, g:i a" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr class="row1"><td colspan="7" style="padding: 15px; text-align: center; color: #666;">No older orders found matching the filters.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

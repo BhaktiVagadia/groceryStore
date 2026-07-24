@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <!-- Single Products Start -->
+    <div class="container-fluid shop py-5">
+        <div class="container py-5">
+            <div class="row g-4">
+                <div class="col-lg-5 col-xl-3 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="input-group w-100 mx-auto d-flex mb-4">
+                        <input type="search" id="productSearch" class="form-control p-3" placeholder="keywords"
+                            aria-describedby="search-icon-1">
+                        <span id="search-icon-2" class="input-group-text p-3"><i class="fa fa-search"></i></span>
+                    </div>
+                    <div class="product-categories mb-4">
+                        <h4>Products Categories</h4>
+                        <ul class="list-unstyled category-scroll">
+							 <li>
+                                <div class="categories-item">
+                                    <a href="{% url 'products' %}" class="text-dark {% if request.GET.category_sku == category.sku %}active-category{% endif %}"><i class="fas fa-apple-alt text-secondary me-2"></i>
+                                        All Category</a>
+                                    <span class="{% if not request.GET.category_sku %}active-category-span{% endif %}">{{ all_products_count }}</span>
+                                </div>
+                            </li>
+                            {% for category in categories %}
+                            <li>
+                                <div class="categories-item">
+                                    <a href="{% url 'products' %}?category_sku={{ category.sku }}" class="text-dark {% if request.GET.category_sku == category.sku %}active-category{% endif %}"><i class="fas fa-apple-alt text-secondary me-2"></i>
+                                        {{ category.name }}</a>
+                                    <span class="{% if request.GET.category_sku == category.sku %}active-category-span{% endif %}">{{ category.total_products }}</span>
+                                </div>
+                            </li>
+                            {% endfor %}
+
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-7 col-xl-9 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="row g-4 single-product">
+                        <div class="col-xl-6">
+                            <div class="single-carousel owl-carousel">
+
+								{% for img_obj in product.get_ordered_images %}
+									<div class="single-item"
+										data-dot="<img class='img-fluid' src='{{ img_obj.image.url }}' alt=''>">
+										<div class="single-inner bg-light rounded">
+											<img src="{{ img_obj.image.url }}" class="img-fluid rounded" alt="Image">
+										</div>
+									</div>
+								{% endfor %}
+
+                            </div>
+                        </div>
+                        <div class="col-xl-6">
+                            <h4 class="fw-bold mb-3">{{product.name}}</h4>
+                            <p class="mb-3">Category: {{ product.category_id.name }}</p>
+                            <h5 class="fw-bold mb-3 product-detail-price" data-base-price="{{ product.price }}">Rs. {{ product.price}}</h5>
+							<div class="d-flex flex-column mb-3">
+                                <small>Product SKU: {{ product.sku }}</small>
+                                <small><strong class="text-primary">{% if product.is_available%}Available{% else %}Out of Stock{% endif %} </strong></small>
+                            </div>
+                            {% if product.active_variants %}
+                                <div class="mb-3" style="max-width: 300px;">
+                                    <label for="productVariantSelect" class="form-label small text-muted mb-1">Variant</label>
+                                    <select id="productVariantSelect" class="form-select variant-select" data-base-price="{{ product.price }}">
+                                        <option value="" data-price="{{ product.price }}">Select variant</option>
+                                        {% for variant in product.active_variants %}
+                                            <option value="{{ variant.id }}" data-price="{{ variant.price }}">{{ variant.attribute_name }} - Rs. {{ variant.price }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% endif %}
+                            <p class="mb-4">{{product.description}}</p>
+                            {% if product.is_available %}
+                                <form action="{% url 'addToCart' product.id %}" method="POST" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" class="variant-id-input" name="variant_id" value="">
+                                    <div class="input-group quantity mb-5" style="width: 100px;">
+                                        <div class="input-group-btn">
+                                            <button type="button" class="btn btn-sm btn-minus rounded-circle bg-light border">
+                                                <i class="fa fa-minus"></i>
+                                            </button>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm text-center border-0" value="1" name="quantity">
+                                        <div class="input-group-btn">
+                                            <button type="button" class="btn btn-sm btn-plus rounded-circle bg-light border">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary border-secondary rounded-pill py-2 px-4 mb-4">
+                                        <i class="fa fa-shopping-cart"></i> Add to Cart
+                                    </button>
+                                </form>
+                            {% else %}
+                                 <form action="{% url 'notify_me' product.id %}" method="POST" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="email" name="email" class="form-control mb-2" placeholder="Enter Email" required>
+                                    <button type="submit" class="btn btn-primary border-secondary rounded-pill py-2 px-4 mb-4">
+                                        <i class="fa fa-bell"></i> Notify Me
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Single Products End -->
+
+    <script>
+        const searchButton = document.getElementById('search-icon-2');
+        const keywordSearch = document.getElementById('productSearch');
+
+        // Central function to update all URL query parameters together
+        function SearchProducts() {
+            let queryParams = new URLSearchParams();
+
+            const searchVal = keywordSearch.value.trim();
+
+            if (searchVal) queryParams.set('keywords', searchVal);
+
+            // Refresh the page with combined properties
+
+            const productPageUrl = '/products/'
+            window.location.href = productPageUrl + '?' + queryParams.toString();
+        }
+        searchButton.addEventListener('click', SearchProducts);
+
+        keywordSearch.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                SearchProducts();
+            }
+        });
+
+        keywordSearch.addEventListener('search', function(e) {
+            // If the input value becomes empty, it means the user clicked the 'X'
+            if (this.value === '') {
+                SearchProducts(); // Call your centralized function to reload the page without the keyword filter
+            }
+        });
+
+        // Update displayed price + hidden add-to-cart field when a variant is picked
+        const variantSelect = document.getElementById('productVariantSelect');
+        if (variantSelect) {
+            variantSelect.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                const price = selectedOption.getAttribute('data-price');
+
+                const priceEl = document.querySelector('.product-detail-price');
+                if (priceEl) {
+                    priceEl.textContent = 'Rs. ' + parseFloat(price).toFixed(2);
+                }
+
+                const variantInput = document.querySelector('.variant-id-input');
+                if (variantInput) {
+                    variantInput.value = this.value; // empty string = base product, no variant
+                }
+            });
+        }
+    </script>
+
+
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <!-- Cart Page Start -->
+    <div class="container-fluid py-5" xmlns="http://www.w3.org/1999/html">
+        {% if cart and cart.cartitem_set.count > 0%}
+        <div class="container py-5">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Price</th>
+                            <th scope="col">Quantity</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Handle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in cart.cartitem_set.all %}
+                        <tr data-product-id="{{ item.product_id_id }}" data-variant-id="{{ item.variant_id_id|default:'' }}">
+                            <th scope="row">
+                                <p class="mb-0 py-4">
+                                    <a href="{% url 'product_detail' sku=item.product_id.sku %}">{{ item.product_name }}</a>
+                                    {% if item.variant_id %}
+                                        <br><small class="text-muted">{{ item.variant_id.attribute_name }}</small>
+                                    {% endif %}
+                                </p>
+                            </th>
+                            <td>
+                                <p class="mb-0 py-4">Rs. {{ item.price }}</p>
+                            </td>
+                            <td>
+                                <div class="input-group quantity py-4" style="width: 100px;">
+                                    <div class="input-group-btn">
+                                        <button class="btn btn-sm btn-minus rounded-circle bg-light border cart-item">
+                                            <i class="fa fa-minus"></i>
+                                        </button>
+                                    </div>
+                                    <input type="number" min="0" class="form-control form-control-sm text-center border-0 quantity-input cart-item"
+                                        value="{{ item.qty }}">
+                                    <div class="input-group-btn">
+                                        <button class="btn btn-sm btn-plus rounded-circle bg-light border cart-item">
+                                            <i class="fa fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <p class="mb-0 py-4 row-total-val">{{ item.total_price }} </p>
+                            </td>
+                            <td class="py-4">
+                                <a href="{% url 'deleteCartItem' item.id %}" class="btn btn-md rounded-circle bg-light border"><i class="fa fa-times text-danger"></i></a>
+
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if messages %}
+                <div class="messages-container" style="margin-bottom: 15px;">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}" style="padding: 10px; color: {% if message.tags == 'error' %}#721c24; background-color: #f8d7da;{% else %}#155724; background-color: #d4edda;{% endif %} border-round: 4px;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="row row justify-content-between g-4">
+                <div class="col-12 col-lg-7">
+                    <div class="available-coupons-section" style="margin-top: 20px; margin-bottom: 20px;">
+                        <h4 style="color: #a06a50; margin-bottom: 10px;">Available Coupons</h4>
+
+                        {% if available_coupons %}
+                            <div class="coupons-grid" style="display: flex; flex-direction: column; gap: 10px;">
+                                {% for coupon in available_coupons %}
+                                    <div class="coupon-card" style="display: flex; align-items: center; justify-content: space-between; border: 1px dashed #a06a50; padding: 10px 15px; border-radius: 8px; background-color: #fdfaf8;">
+                                        <div>
+                                            <!-- Code Tag -->
+                                            <strong style="background-color: #a06a50; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace;">
+                                                {{ coupon.coupon_code }}
+                                            </strong>
+                                            <!-- Description -->
+                                            <span style="margin-left: 10px; color: #555; font-size: 14px;">
+                                                {{ coupon.description }}
+                                            </span>
+                                            {% if coupon.min_total > 0 %}
+                                                <small style="display: block; color: #888; font-size: 12px; margin-top: 2px;">
+                                                    (Minimum Total: Rs. {{ coupon.min_total }})
+                                                </small>
+                                            {% endif %}
+                                        </div>
+
+                                        <form action="{% url 'apply_cart_coupon' %}" method="post" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="coupon_code" value="{{ coupon.coupon_code }}">
+                                            <button type="submit" style="background-color: #a06a50; color: white; border: none; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 13px;">
+                                                Apply
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p style="color: #888; font-style: italic; font-size: 14px;">No public coupons available at this moment.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12 col-lg-5">
+                    <div class=" justify-content-end">
+                        <div class="bg-light rounded">
+                            <div class="p-4">
+                                <h1 class="display-6 mb-4">Cart <span class="fw-normal">Total</span></h1>
+                                <div class="d-flex justify-content-between mb-4">
+                                    <h5 class="mb-0 me-4">Subtotal:</h5>
+                                    <p class="mb-0">Rs. <span class="cart-row-total">{{ cart.row_total|floatformat:2  }}</span></p>
+                                </div>
+                                <div class="d-flex justify-content-between mb-4">
+                                    <h5 class="mb-0 me-4">Shipping</h5>
+                                    <div>
+                                        <p class="mb-0">Rs. <span class="shipping-amount"> {{ cart.shipping_amount|floatformat:2  }}</span></p>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between mb-4">
+                                    <h5 class="mb-0 me-4">Tax</h5>
+                                    <div>
+                                        <p class="mb-0">Rs.<span class="tax-amount">{{ cart.tax_amount|floatformat:2  }}</span></p>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <h5 class="mb-0 me-4">Discount ({% if cart.coupon_code %}{{ cart.coupon_code }}{% else %}{{ cart.discount_rate }}%{% endif %})</h5>
+                                    <div>
+                                        <p class="mb-0">- Rs. <span class="discount-amount">{% if cart.discount_amount %} {{ cart.discount_amount|floatformat:2  }}{% else %}{{ 0.00|floatformat:2 }} {% endif %}</span> </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
+                                <h5 class="mb-0 ps-4 me-4">Total</h5>
+                                <p class="mb-0 pe-4 ">Rs. <span class="cart-total"> {{ cart.cart_total|floatformat:2  }}</span></p>
+                            </div>
+                            <a class="btn btn-primary rounded-pill px-4 py-3 text-uppercase mb-4 ms-4"
+                                href="{% url 'checkout' %}">Proceed Checkout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+         <div class="container py-5">
+             <p class="text-primary"> Cart is Empty</p>
+         </div>
+        {% endif %}
+    </div>
+    <!-- Cart Page End -->
+
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Forces every field label to be bold globally across all models */
+    .form-row label {
+        font-weight: bold !important;
+    }
+    .form-row label.required::after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock %}

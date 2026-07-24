@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <!-- Empty Cart Start -->
+    <div class="container-fluid py-5">
+        <div class="container py-5 text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <!-- Stylized Shopping Cart Icon -->
+                    <i class="bi bi-cart-x display-1 text-secondary mb-4"></i>
+                    <h1 class="display-5 mb-3">Your Cart is Empty</h1>
+                    <p class="mb-4 text-muted">
+                        Before you can check out, you must add some items to your shopping cart.
+                        You will find a lot of interesting products on our shop page.
+                    </p>
+
+                    <!-- Dynamic Suggestion Links or Quick Actions -->
+                    <div class="mb-5">
+                        <a class="btn btn-primary rounded-pill py-3 px-5 m-2" href="{% url 'products' %}">
+                            <i class="bi bi-bag-fill me-2"></i>Continue Shopping
+                        </a>
+                        <a class="btn btn-outline-secondary rounded-pill py-3 px-5 m-2" href="{% url 'home' %}">
+                            Go To Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Empty Cart End -->
+{% endblock %}
