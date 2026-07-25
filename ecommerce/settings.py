@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-*u(ckjdh2jx69tg*t9q0oq*+b*!9w&b+u)o8)8un-9k1_arz3x
 DEBUG = True
 
 ALLOWED_HOSTS = ['grocerystore-4bey.onrender.com', '127.0.0.1', 'localhost']
-
+WHITENOISE_MANIFEST_STRICT = False
 
 
 # Application definition
