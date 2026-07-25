@@ -81,9 +81,10 @@ def checkout(request):
                 out_of_stock.append(cart_item.product_name)
         if out_of_stock:
                 form = OrderCheckoutForm()
+                unavailable_products = ",".join(out_of_stock)
                 context = {'cart': cart,
                     'form': form,
-                    'error': f"Sorry, '{",".join(out_of_stock)}' is/are currently out of stock(s) or unavailable."
+                    'error': f"Sorry, '{unavailable_products}' is/are currently out of stock(s) or unavailable."
                 }
                 return render(request, 'cart/checkout.html', context)
     except Cart.DoesNotExist:
