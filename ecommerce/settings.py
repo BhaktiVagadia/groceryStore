@@ -96,19 +96,22 @@ WSGI_APPLICATION = 'ecommerce.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-if os.environ.get('RENDER'):
-    DB_PATH = os.path.join('/var/data', 'db.sqlite3')
-else:
-    DB_PATH = BASE_DIR / 'db.sqlite3'
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DB_PATH,
-        'OPTIONS': {
-            'timeout': 30,
+IS_BUILDING = 'render' in os.environ.get('RE_DEPLOY_PROVIDER', '') or 'collectstatic' in sys.argv
+
+if IS_BUILDING:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',  # Directs file compilation cleanly into RAM memory
         }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
