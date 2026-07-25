@@ -145,9 +145,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 RAZORPAY_KEY_ID = 'rzp_test_T4KKi1WgNlKsZ1'
 RAZORPAY_KEY_SECRET = 'zV2waxwFC3pnA7ie0A7igMIw'
