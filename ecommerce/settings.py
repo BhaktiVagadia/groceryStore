@@ -165,6 +165,7 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 RAZORPAY_KEY_ID = 'rzp_test_T4KKi1WgNlKsZ1'
 RAZORPAY_KEY_SECRET = 'zV2waxwFC3pnA7ie0A7igMIw'
 
