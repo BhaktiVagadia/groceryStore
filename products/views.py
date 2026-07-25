@@ -1,5 +1,3 @@
-from idlelib import redirector
-
 from django.shortcuts import render,get_object_or_404,redirect
 
 from categories.models import Category
